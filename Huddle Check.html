@@ -1,0 +1,751 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Huddle Check</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: a two-column workbench. Inputs on the left, the readout on the right; one column on a phone.
+   Signature element: per-person airtime bars with a tick at the equal-share mark. */
+:root {
+  --bg: #F2F5F8;
+  --surface: #FFFFFF;
+  --sunken: #E9EEF3;
+  --ink: #0E1B2C;
+  --muted: #54657A;
+  --line: #D3DCE5;
+  --accent: #0B6E7F;
+  --accent-ink: #FFFFFF;
+  --accent-soft: #DDF0F3;
+  --high: #B42318;
+  --high-soft: #FBE4E1;
+  --mid: #9A5B07;
+  --mid-soft: #FBEBCF;
+  --low: #3D5A80;
+  --low-soft: #E2EAF4;
+  --good: #1F7A4D;
+  --good-soft: #DDF1E6;
+  --font-display: "Bricolage Grotesque", "Avenir Next", "Segoe UI", system-ui, sans-serif;
+  --font-body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0B131C; --surface: #121D29; --sunken: #0E1822; --ink: #E5ECF3; --muted: #93A5B8; --line: #25374A;
+    --accent: #4DB6C7; --accent-ink: #06222A; --accent-soft: #123541;
+    --high: #FF8A7D; --high-soft: #3A1B19; --mid: #F0B45B; --mid-soft: #3A2B10;
+    --low: #8DB0DD; --low-soft: #172A42; --good: #62C48E; --good-soft: #13301F;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0B131C; --surface: #121D29; --sunken: #0E1822; --ink: #E5ECF3; --muted: #93A5B8; --line: #25374A;
+  --accent: #4DB6C7; --accent-ink: #06222A; --accent-soft: #123541;
+  --high: #FF8A7D; --high-soft: #3A1B19; --mid: #F0B45B; --mid-soft: #3A2B10;
+  --low: #8DB0DD; --low-soft: #172A42; --good: #62C48E; --good-soft: #13301F;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  background: var(--bg); color: var(--ink);
+  font: 15px/1.55 var(--font-body);
+  padding-block: 28px 56px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+.wrap { max-width: 1120px; margin: 0 auto; display: flex; flex-direction: column; gap: 20px; }
+h1, h2, h3 { font-family: var(--font-display); text-wrap: balance; margin: 0; line-height: 1.15; letter-spacing: -0.01em; }
+h1 { font-size: clamp(30px, 5vw, 44px); font-weight: 700; }
+h2 { font-size: 21px; font-weight: 700; }
+h3 { font-size: 16px; font-weight: 600; }
+p { margin: 0; }
+.eyebrow { font: 500 12px/1 var(--font-mono); letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent); }
+.lede { color: var(--muted); max-width: 62ch; font-size: 16px; }
+header { display: flex; flex-direction: column; gap: 10px; padding-bottom: 4px; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 18px; }
+.howto summary { cursor: pointer; font: 600 16px var(--font-display); list-style: none; display: flex; justify-content: space-between; gap: 12px; align-items: center; }
+.howto summary::-webkit-details-marker { display: none; }
+.howto summary::after { content: "Hide"; font: 500 12px var(--font-mono); color: var(--muted); }
+.howto:not([open]) summary::after { content: "Show"; }
+.howto-body { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 18px; margin-top: 14px; }
+.howto-body > div { min-width: 0; }
+.howto-body h3 { margin-bottom: 6px; }
+.howto-body ol, .howto-body ul { margin: 0; padding-left: 18px; color: var(--muted); }
+.howto-body li + li { margin-top: 4px; }
+code, .mono { font-family: var(--font-mono); font-size: 0.88em; background: var(--sunken); padding: 1px 5px; border-radius: 4px; }
+.cols { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 6fr); gap: 20px; align-items: start; }
+@media (max-width: 860px) { .cols { grid-template-columns: minmax(0, 1fr); } }
+.stack { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+.field { display: flex; flex-direction: column; gap: 6px; }
+.field label, .field .lbl { font-weight: 600; font-size: 14px; display: flex; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+.field .hint { font-weight: 400; color: var(--muted); font-size: 13px; }
+textarea, input[type="text"], select {
+  width: 100%; font: 14px/1.5 var(--font-body); color: var(--ink); background: var(--surface);
+  border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px;
+}
+textarea { resize: vertical; min-height: 120px; }
+#transcript { font-family: var(--font-mono); font-size: 13px; min-height: 250px; }
+textarea:focus-visible, input:focus-visible, select:focus-visible, button:focus-visible, summary:focus-visible {
+  outline: 2px solid var(--accent); outline-offset: 2px;
+}
+.row2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 12px; }
+.btns { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+button { font: 600 14px var(--font-body); border-radius: 8px; padding: 10px 14px; cursor: pointer; border: 1px solid var(--line); background: var(--surface); color: var(--ink); }
+button:hover { background: var(--sunken); }
+button.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+button.primary:hover { filter: brightness(1.08); background: var(--accent); }
+button:disabled { opacity: 0.55; cursor: not-allowed; }
+.banner { display: flex; gap: 10px; align-items: center; justify-content: space-between; flex-wrap: wrap; background: var(--mid-soft); color: var(--ink); border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; font-size: 13px; }
+.banner button { padding: 6px 10px; font-size: 13px; }
+.sec-head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; flex-wrap: wrap; margin-bottom: 12px; }
+.sec-head .tag { font: 500 12px var(--font-mono); color: var(--muted); }
+.stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 12px 18px; margin-bottom: 16px; }
+.stat dt { font: 500 11px var(--font-mono); letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+.stat dd { margin: 2px 0 0; font: 700 22px var(--font-display); font-variant-numeric: tabular-nums; }
+.people { display: flex; flex-direction: column; gap: 8px; margin: 0 0 6px; padding: 0; list-style: none; }
+.person { display: grid; grid-template-columns: minmax(4.5rem, 7rem) minmax(0, 1fr) 3.2rem 3rem; gap: 10px; align-items: center; font-size: 14px; }
+.person .nm { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 500; }
+.track { position: relative; height: 14px; background: var(--sunken); border-radius: 3px; }
+.fill { position: absolute; inset: 0 auto 0 0; width: var(--w); background: var(--accent); border-radius: 3px; }
+.person.hot .fill { background: var(--high); }
+.person.quiet .fill { background: var(--low); }
+.tick { position: absolute; top: -3px; bottom: -3px; left: var(--eq); width: 2px; background: var(--ink); opacity: 0.75; }
+.num { text-align: right; font: 500 13px var(--font-mono); font-variant-numeric: tabular-nums; }
+.colhead { color: var(--muted); font: 500 11px var(--font-mono); letter-spacing: 0.05em; text-transform: uppercase; }
+.legend { color: var(--muted); font-size: 12.5px; margin-bottom: 16px; }
+.legend b { display: inline-block; width: 2px; height: 11px; background: var(--ink); opacity: 0.75; vertical-align: -1px; margin-right: 5px; }
+.finds { display: flex; flex-direction: column; gap: 12px; margin: 0; padding: 0; list-style: none; }
+.find { border: 1px solid var(--line); border-radius: 8px; padding: 12px 14px; display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.find .top { display: flex; gap: 8px; align-items: flex-start; flex-wrap: wrap; }
+.find .ttl { font-weight: 600; flex: 1 1 14rem; min-width: 0; }
+.pill { font: 600 11px var(--font-mono); letter-spacing: 0.05em; text-transform: uppercase; padding: 3px 7px; border-radius: 99px; white-space: nowrap; }
+.pill.high { background: var(--high-soft); color: var(--high); }
+.pill.medium { background: var(--mid-soft); color: var(--mid); }
+.pill.low { background: var(--low-soft); color: var(--low); }
+.pill.good { background: var(--good-soft); color: var(--good); }
+.find .ev { color: var(--muted); font-size: 14px; overflow-wrap: anywhere; }
+.find .try { font-size: 14px; overflow-wrap: anywhere; }
+.find .try b, .find .ev b { font-weight: 600; color: var(--ink); }
+.src { font: 500 12px var(--font-mono); color: var(--accent); }
+.charter { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 10px; margin: 0; padding: 0; list-style: none; }
+.ck { display: flex; gap: 10px; align-items: flex-start; border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; min-width: 0; }
+.ck .box { flex: none; width: 20px; height: 20px; border-radius: 5px; display: grid; place-items: center; font: 700 13px var(--font-mono); margin-top: 1px; }
+.ck.ok .box { background: var(--good-soft); color: var(--good); }
+.ck.miss .box { background: var(--mid-soft); color: var(--mid); }
+.ck .t { font-weight: 600; font-size: 14px; }
+.ck .d { color: var(--muted); font-size: 13px; overflow-wrap: anywhere; }
+.divider { height: 1px; background: var(--line); border: 0; margin: 18px 0; }
+.ai-out { display: flex; flex-direction: column; gap: 14px; }
+.ai-out h3 { margin-bottom: 6px; }
+.headline { font: 600 18px/1.35 var(--font-display); text-wrap: balance; }
+.plist { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 6px; }
+.plain { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 8px; }
+.act { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 10px; align-items: start; }
+.act .who { font: 500 12px var(--font-mono); background: var(--accent-soft); color: var(--accent); padding: 3px 7px; border-radius: 5px; white-space: nowrap; }
+.act .why { color: var(--muted); font-size: 13.5px; }
+.status { color: var(--muted); font-size: 14px; }
+.err { background: var(--high-soft); color: var(--ink); border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; font-size: 14px; }
+.dots::after { content: ""; animation: dots 1.2s steps(4, end) infinite; }
+@keyframes dots { 0% { content: ""; } 25% { content: "."; } 50% { content: ".."; } 75% { content: "..."; } }
+@media (prefers-reduced-motion: reduce) { .dots::after { animation: none; content: "..."; } }
+details.prompt summary { cursor: pointer; font-weight: 600; font-size: 14px; }
+details.prompt textarea { margin-top: 10px; font-family: var(--font-mono); font-size: 12px; min-height: 180px; }
+.foot { color: var(--muted); font-size: 13px; max-width: 80ch; }
+.refs { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; margin-top: 10px; }
+.refs div { font-size: 13px; color: var(--muted); }
+.refs b { display: block; color: var(--ink); font-family: var(--font-display); font-size: 14px; margin-bottom: 2px; }
+</style>
+
+<div class="wrap">
+  <header>
+    <span class="eyebrow">TMP 442 · Leading Technology Teams</span>
+    <h1>Huddle Check</h1>
+    <p class="lede">Paste what your team produced: a meeting transcript, your charter, and any Breakout Learning or assessment feedback. Huddle Check shows who is speaking and who is not, where the process is leaking, and what to try in the next meeting.</p>
+  </header>
+
+  <details class="card howto" open>
+    <summary>How to use this tool (about 3 minutes)</summary>
+    <div class="howto-body">
+      <div>
+        <h3>Steps</h3>
+        <ol>
+          <li>Record a team meeting and copy the transcript from Zoom, Teams, Otter or your phone's transcription.</li>
+          <li>Put one speaker per line as <code>Name: what they said</code>. Use first names or initials.</li>
+          <li>Paste your team charter and any feedback (Breakout Learning comments, assessment takeaways).</li>
+          <li>Press <b>Run instant check</b>. It runs in your browser in a second.</li>
+          <li>Press <b>Get AI coaching</b> for a written read tied to the class frameworks.</li>
+        </ol>
+      </div>
+      <div>
+        <h3>What each input unlocks</h3>
+        <ul>
+          <li><b>Transcript</b>: airtime, quiet members, who closes decisions, concerns that got brushed aside.</li>
+          <li><b>Charter</b>: which parts of a team contract are missing.</li>
+          <li><b>Feedback</b>: how members experienced the meeting, which the transcript cannot show. Used by AI coaching only.</li>
+          <li><b>Roster</b>: finds people who never spoke. Match the names used in the transcript.</li>
+        </ul>
+      </div>
+      <div>
+        <h3>Good to know</h3>
+        <ul>
+          <li>The instant check uses simple pattern matching, so treat it as a prompt for discussion, not a verdict.</li>
+          <li>Nothing is stored. The instant check never leaves your browser.</li>
+          <li>AI coaching sends your text to Claude through your own account. Remove names you would not share.</li>
+          <li>No AI access? Copy the prompt at the bottom into ChatGPT or any AI tool.</li>
+        </ul>
+      </div>
+    </div>
+  </details>
+
+  <div class="cols">
+    <div class="stack">
+      <div class="banner" id="sampleBanner">
+        <span><b>Sample data is loaded.</b> It is a made-up meeting so you can see the output. Replace it with your own.</span>
+        <button type="button" id="clearBtn">Clear and paste mine</button>
+      </div>
+
+      <div class="card stack">
+        <div class="field">
+          <label for="transcript"><span>1. Meeting transcript</span><span class="hint">Name: what they said</span></label>
+          <textarea id="transcript" spellcheck="false"></textarea>
+        </div>
+        <div class="row2">
+          <div class="field">
+            <label for="roster"><span>Team roster</span><span class="hint">optional</span></label>
+            <input type="text" id="roster" placeholder="Maya, Jordan, Priya, Leo, Sam">
+          </div>
+          <div class="field">
+            <label for="purpose"><span>What was the meeting for?</span></label>
+            <select id="purpose">
+              <option value="creative">Generating ideas (creative)</option>
+              <option value="decision" selected>Choosing between options (decision)</option>
+              <option value="problem">Working through a problem</option>
+              <option value="tactical">Executing a plan (tactical)</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div class="card stack">
+        <div class="field">
+          <label for="charter"><span>2. Team charter</span><span class="hint">paste the text</span></label>
+          <textarea id="charter"></textarea>
+        </div>
+        <div class="field">
+          <label for="feedback"><span>3. Feedback and assessments</span><span class="hint">Breakout Learning, peer comments, assessment takeaways</span></label>
+          <textarea id="feedback"></textarea>
+        </div>
+      </div>
+
+      <div class="btns">
+        <button type="button" class="primary" id="runBtn">Run instant check</button>
+        <button type="button" id="aiBtn" disabled>Get AI coaching</button>
+        <button type="button" id="sampleBtn">Load sample</button>
+      </div>
+      <p class="status" id="aiNote" aria-live="polite">Checking whether AI coaching is available in this view.</p>
+    </div>
+
+    <div class="stack" id="results" aria-live="polite">
+      <section class="card" aria-labelledby="h-part">
+        <div class="sec-head"><h2 id="h-part">Who is speaking</h2><span class="tag">Instant check · W2</span></div>
+        <div id="partOut"></div>
+      </section>
+      <section class="card" aria-labelledby="h-flags">
+        <div class="sec-head"><h2 id="h-flags">What stands out</h2><span class="tag">Instant check · W1–W4</span></div>
+        <ul class="finds" id="flagOut"></ul>
+      </section>
+      <section class="card" aria-labelledby="h-charter">
+        <div class="sec-head"><h2 id="h-charter">Charter check</h2><span class="tag">Instant check · W3</span></div>
+        <ul class="charter" id="charterOut"></ul>
+      </section>
+      <section class="card" aria-labelledby="h-ai">
+        <div class="sec-head"><h2 id="h-ai">AI coaching</h2><span class="tag">Claude · all four weeks</span></div>
+        <div id="aiOut"><p class="status">Press <b>Get AI coaching</b> to get a written read of the transcript, charter and feedback together, with a plan for your next meeting.</p></div>
+      </section>
+    </div>
+  </div>
+
+  <details class="card prompt">
+    <summary>Use your own AI tool instead: copy the prompt</summary>
+    <p class="foot" style="margin-top:8px">This is the exact prompt Huddle Check sends, filled with whatever is in the boxes above. Paste it into ChatGPT, Claude or Cursor.</p>
+    <div class="btns" style="margin-top:10px"><button type="button" id="copyBtn">Copy prompt</button><span class="status" id="copyNote"></span></div>
+    <textarea id="promptOut" readonly spellcheck="false"></textarea>
+  </details>
+
+  <section class="card">
+    <h2>Where the checks come from</h2>
+    <div class="refs">
+      <div><b>W1 · Intro to Teams</b>Group performance equals potential minus process losses (coordination, ability, motivation). Match structure to the task and set norms early.</div>
+      <div><b>W2 · Building and Managing</b>Composition, participation and influence. The 80/20 pattern, spectators, and why confidence is not expertise.</div>
+      <div><b>W3 · Conflict and Creativity</b>Team contracts, evidence over verdicts, task versus relationship conflict, ground rules and a parking lot.</div>
+      <div><b>W4 · Influence and Decision-Making</b>Common team challenges, psychological safety, differentiation and integration, and Cialdini's principles of influence.</div>
+    </div>
+  </section>
+</div>
+
+<script>
+"use strict";
+/* ---------- sample data (made up) ---------- */
+var SAMPLE = {
+  transcript: [
+    "Jordan: Okay, let's get started. We need to lock the project topic today. I think we go with the campus food-waste app.",
+    "Maya: I like it, but what problem are we solving exactly? Who is the customer?",
+    "Jordan: Students, obviously. Dining halls throw out tons of food. Let's go with it and split up tasks. I'll take the pitch, Leo can do slides.",
+    "Leo: Sure, I can do slides.",
+    "Priya: Before we lock it in, I pulled the data from the dining services report. Only about 12 percent of the waste is plated food that students leave. Most of it is prep waste. So a student app might not move the number.",
+    "Jordan: Right, but the app is still the more fun idea. Let's keep going.",
+    "Maya: I think Priya's point matters though. What if we aim at the dining staff instead of students?",
+    "Jordan: We don't have time to redo it. The deadline is Friday and I already started the outline.",
+    "Leo: Yeah, I think we should stick with the plan.",
+    "Maya: Okay. Priya, can you share the report so we can all look at it?",
+    "Priya: Sure, I'll post it in the channel tonight.",
+    "Jordan: Great. Next, who is handling the data section? Priya, you take that. Sam, anything from you?",
+    "Sam: No, I'm good.",
+    "Jordan: Perfect. So the plan is I draft the pitch, Leo slides, Priya data, Maya the customer interviews. Sam, you can proofread.",
+    "Maya: Do we have a date for the first draft?",
+    "Jordan: Wednesday night. Let's say that's final.",
+    "Priya: I'm worried that's tight if we change the focus after the interviews.",
+    "Jordan: We won't change the focus. Okay, anyone else have anything? No? Great, meeting over.",
+    "Leo: Thanks everyone."
+  ].join("\n"),
+  roster: "Maya, Jordan, Priya, Leo, Sam",
+  purpose: "decision",
+  charter: [
+    "Team Charter (draft)",
+    "Goal: Deliver a strong final project by December 8.",
+    "Roles: Jordan is project lead. Leo designs the slides. Priya handles research and data. Maya runs customer interviews. Sam proofreads.",
+    "Meetings: Mondays at 6pm on Zoom.",
+    "Communication: We use the group chat and reply within 24 hours."
+  ].join("\n"),
+  feedback: [
+    "Breakout Learning feedback (anonymous):",
+    "- \"Jordan keeps us moving, which I appreciate, but I sometimes felt decisions were made before we had talked them through.\"",
+    "- \"I had information to share but wasn't sure how to bring it up without slowing things down.\"",
+    "- \"I did not know what I was supposed to contribute besides proofreading.\"",
+    "Assessment takeaway: several of us said we prefer to jump in and start working rather than plan first."
+  ].join("\n")
+};
+
+/* ---------- analysis (pure functions) ---------- */
+var RX = {
+  invite: /(what do you think|what are your thoughts|any (other )?(thoughts|ideas|concerns|questions)|haven'?t heard from|hear from|would like to hear|what about you|do you agree|anything from you|anyone else|thoughts\?)/i,
+  build: /(building on|build on|to add to|add to that|adding to|good point|great point|i like (that|your|the)|i agree|agree with|yes,? and|point matters|that matters)/i,
+  concern: /(i disagree|not sure|worried|concern|what if|however|push back|i don'?t think|might not|too tight|risk)/i,
+  evidence: /(data|report|survey|numbers?|percent|%|source|interview|evidence|study|research)/i,
+  direct: /(let'?s (go with|lock|say|decide|keep|stick|get)|we('| a)re going (with|to)|decided|final call|that'?s final|the plan is|we won'?t|meeting over|i'?ll take|you take|you can|you'?ll)/i,
+  close: /(let'?s (keep going|move on|go with)|we don'?t have time|we won'?t|i already|stick (with|to)|moving on|that'?s final)/i
+};
+function words(s) { var m = s.trim().match(/\S+/g); return m ? m.length : 0; }
+function validName(n) {
+  n = n.trim();
+  return n.length > 0 && n.length <= 32 && n.split(/\s+/).length <= 4 && !/[?!,;]/.test(n);
+}
+function parseTranscript(text) {
+  var turns = [];
+  var lineRx = /^\s*(?:[\[(]?\d{1,2}:\d{2}(?::\d{2})?[\])]?\s*[-–]?\s*)?([^:\n]{1,40}?)\s*:\s+(\S.*)$/;
+  text.split(/\r?\n/).forEach(function (raw) {
+    var line = raw.trim();
+    if (!line) return;
+    var m = line.match(lineRx);
+    if (m && validName(m[1])) turns.push({ who: m[1].trim().replace(/\s+/g, " "), text: m[2] });
+    else if (turns.length) turns[turns.length - 1].text += " " + line;
+  });
+  return turns;
+}
+function pct(x) { return Math.round(x * 100); }
+function snip(s, n) { s = s.replace(/\s+/g, " ").trim(); return s.length > n ? s.slice(0, n - 1).trimEnd() + "…" : s; }
+function list(names) {
+  if (names.length <= 1) return names.join("");
+  return names.slice(0, -1).join(", ") + " and " + names[names.length - 1];
+}
+
+function analyze(turns, roster, purpose) {
+  var by = {};
+  function get(name) {
+    var k = name.toLowerCase();
+    if (!by[k]) by[k] = { name: name, turns: 0, words: 0, invite: 0, build: 0, concern: 0, evidence: 0, direct: 0 };
+    return by[k];
+  }
+  roster.forEach(get);
+  turns.forEach(function (t) {
+    var s = get(t.who);
+    s.turns++; s.words += words(t.text);
+    ["invite", "build", "concern", "evidence", "direct"].forEach(function (k) { if (RX[k].test(t.text)) s[k]++; });
+  });
+  var people = Object.keys(by).map(function (k) { return by[k]; }).sort(function (a, b) { return b.words - a.words || b.turns - a.turns; });
+  var n = people.length, total = people.reduce(function (a, p) { return a + p.words; }, 0);
+  var totalTurns = turns.length;
+  people.forEach(function (p) { p.share = total ? p.words / total : 0; p.wpt = p.turns ? p.words / p.turns : 0; });
+  var eq = n ? 1 / n : 0;
+  var k = Math.max(1, Math.round(n * 0.2));
+  var topShare = people.slice(0, k).reduce(function (a, p) { return a + p.share; }, 0);
+  var res = { people: people, n: n, total: total, totalTurns: totalTurns, eq: eq, k: k, topShare: topShare, flags: [], strengths: [] };
+  if (!totalTurns) return res;
+
+  var top = people[0];
+  var others = people.slice(1);
+  var othersWords = others.reduce(function (a, p) { return a + p.words; }, 0);
+  var othersTurns = others.reduce(function (a, p) { return a + p.turns; }, 0);
+  var othersWpt = othersTurns ? othersWords / othersTurns : 0;
+
+  // 1. dominance
+  if (n >= 3 && top.share >= Math.max(0.4, 1.6 * eq)) {
+    res.flags.push({
+      sev: top.share >= 0.5 ? "high" : "medium",
+      title: top.name + " used " + pct(top.share) + "% of the airtime (an equal share would be " + pct(eq) + "%)",
+      ev: top.turns + " of " + totalTurns + " turns, averaging " + Math.round(top.wpt) + " words a turn versus " + Math.round(othersWpt) + " for everyone else.",
+      tryit: "Rotate who facilitates, run a round-robin before any decision, and ask one member to report airtime at the end of the meeting.",
+      src: "W2 Participation · 80/20 pattern; W4 dominant member"
+    });
+  }
+  // 2. spectators
+  var quiet = people.filter(function (p) { return p.share < 0.4 * eq; });
+  quiet.forEach(function (p) { p.quiet = true; });
+  if (n >= 3 && quiet.length) {
+    var silent = quiet.filter(function (p) { return p.turns === 0; });
+    res.flags.push({
+      sev: silent.length ? "high" : "medium",
+      title: list(quiet.map(function (p) { return p.name; })) + (quiet.length === 1 ? " contributed" : " contributed") + (silent.length === quiet.length ? " nothing" : " very little"),
+      ev: quiet.map(function (p) { return p.name + " " + p.turns + (p.turns === 1 ? " turn" : " turns") + ", " + pct(p.share) + "%"; }).join("; ") + ". Expertise that is not shared is unavailable to the team.",
+      tryit: "Ask for input before the meeting, use direct questions (\"I'd like to hear what Sam has to say\"), and split into pairs for the first pass.",
+      src: "W2 Spectators; W4 reluctant member"
+    });
+  }
+  // 3. invitations
+  var invites = people.reduce(function (a, p) { return a + p.invite; }, 0);
+  if (n >= 3 && invites === 0 && totalTurns >= 5) {
+    res.flags.push({
+      sev: "medium",
+      title: "No one invited a quieter member in",
+      ev: "No turn asked a teammate for their view by name or opened the floor to everyone.",
+      tryit: "Add a standing close to each agenda item: \"Anything we haven't heard? Let's go around.\"",
+      src: "W4 Common team challenges · round-robin"
+    });
+  } else if (invites > 0) {
+    res.strengths.push(invites + (invites === 1 ? " turn invited" : " turns invited") + " others to weigh in.");
+  }
+  // 4. closing statements concentrated
+  var dTotal = people.reduce(function (a, p) { return a + p.direct; }, 0);
+  var dTop = people.slice().sort(function (a, b) { return b.direct - a.direct; })[0];
+  if (dTotal >= 3 && dTop.direct / dTotal >= 0.7) {
+    res.flags.push({
+      sev: "medium",
+      title: "Most decisions and assignments came from " + dTop.name,
+      ev: dTop.name + " made " + dTop.direct + " of " + dTotal + " turns that locked something in, assigned work, or ended the meeting.",
+      tryit: purpose === "creative"
+        ? "In a creative phase, defer judgment. Collect ideas anonymously on sticky notes first, then choose."
+        : "Discuss ideas before voting. Ask each member for a pick with one reason, then decide. Rotate meeting control to whoever has the most expertise on the topic.",
+      src: "W2 Influence; W3 evidence over verdicts; W1 IDEO phases"
+    });
+  }
+  // 5. concerns answered by closing
+  var closed = [];
+  for (var i = 0; i < turns.length - 1; i++) {
+    var a = turns[i], b = turns[i + 1];
+    if (RX.concern.test(a.text) && a.who.toLowerCase() !== b.who.toLowerCase() &&
+        b.who.toLowerCase() === top.name.toLowerCase() && a.who.toLowerCase() !== top.name.toLowerCase() &&
+        (RX.close.test(b.text) || /let'?s keep going|time/i.test(b.text))) {
+      closed.push({ a: a, b: b });
+    }
+  }
+  if (closed.length) {
+    var c = closed[0];
+    res.flags.push({
+      sev: closed.length >= 2 ? "high" : "medium",
+      title: closed.length + (closed.length === 1 ? " concern was" : " concerns were") + " answered by moving on",
+      ev: "For example, " + c.a.who + ": “" + snip(c.a.text, 70) + "”, then " + c.b.who + ": “" + snip(c.b.text, 60) + "”",
+      tryit: "Keep a parking lot. Write the concern down, name who will check it, and revisit before the decision is final. Task disagreement helps performance when it is heard.",
+      src: "W3 Conflict, parking lot; W4 psychological safety"
+    });
+  }
+  // 6. few builds
+  var builds = people.reduce(function (a, p) { return a + p.build; }, 0);
+  if (builds === 0 && totalTurns >= 6) {
+    res.flags.push({
+      sev: "low",
+      title: "Few ideas were built on",
+      ev: "No turn extended or credited a teammate's idea.",
+      tryit: "Try a \"yes, and\" round: each person adds to the last idea before anyone critiques it.",
+      src: "W1 IDEO idea generation"
+    });
+  } else if (builds > 0) {
+    res.strengths.push(builds + (builds === 1 ? " turn built" : " turns built") + " on a teammate's point.");
+  }
+  // 7. creative meeting with closing
+  if (purpose === "creative" && dTotal >= 2) {
+    res.flags.push({
+      sev: "medium",
+      title: "A creative meeting was closed early",
+      ev: dTotal + " turns locked in choices while the goal was to generate ideas.",
+      tryit: "Separate idea generation, choosing, and implementation into distinct blocks with a visible timer.",
+      src: "W1 Match structure to task"
+    });
+  }
+  // strengths
+  var ev = people.reduce(function (a, p) { return a + p.evidence; }, 0);
+  if (ev > 0) res.strengths.push(ev + (ev === 1 ? " turn brought" : " turns brought") + " data or evidence into the discussion.");
+  if (!res.flags.some(function (f) { return f.src.indexOf("80/20") > -1; })) res.strengths.push("Airtime is fairly balanced across members.");
+  if (totalTurns < 8) {
+    res.flags.push({ sev: "low", title: "This is a short sample", ev: "Only " + totalTurns + " turns were found, so patterns are rough.", tryit: "Run it on a full 30 to 60 minute meeting for steadier results.", src: "" });
+  }
+  var rank = { high: 0, medium: 1, low: 2 };
+  res.flags.sort(function (a, b) { return rank[a.sev] - rank[b.sev]; });
+  return res;
+}
+
+var CHARTER = [
+  { label: "Common purpose", rx: /(goal|purpose|mission|objective|we (will|aim))/i, tie: "W3 Team contract", fix: "State why the team exists and what it is delivering." },
+  { label: "Specific, measurable goal", rx: /(\d|by (friday|monday|week)|december|january|november|october|percent|deadline)/i, tie: "W1 Stretch, specific goal", fix: "Add a number and a date so everyone can tell if you hit it." },
+  { label: "Roles and strengths", rx: /(role|responsible|\blead\b|owner|handles|designs|in charge|runs )/i, tie: "W1 Division of labor; W2 Composition", fix: "Name who does what, based on each person's expertise." },
+  { label: "Who integrates the pieces", rx: /(integrat|coordinat|combine|merge|hand ?off|checklist|owns the final|assembl)/i, tie: "W1 Coordination; W4 Integration", fix: "Name a person and a method for pulling separate work together." },
+  { label: "Decision rule", rx: /(decid|decision|vote|consensus|majority|final call|tie)/i, tie: "W3 Evidence over verdicts", fix: "Say how you decide: discuss first, then vote or reach consensus." },
+  { label: "Participation norms", rx: /(everyone|equal|round-?robin|speak|voice|rotate|participat|facilitat|airtime|safe)/i, tie: "W2 Participation; W4 Psychological safety", fix: "Agree how quieter members get heard, and who facilitates." },
+  { label: "Conflict ground rules", rx: /(conflict|disagree|ground rule|norm|raise (an )?(issue|concern)|parking lot|respect)/i, tie: "W3 Managing conflict", fix: "Agree to raise disagreement early and keep it about the task." },
+  { label: "Accountability and review", rx: /(accountab|check-?in|follow.?up|missed|consequence|reminder|retro|revisit|review|thumbs)/i, tie: "W3 Team contract; W1 Experiment and adapt", fix: "Say what happens if work slips and when you will review the charter." }
+];
+function checkCharter(text) {
+  return CHARTER.map(function (c) { return { label: c.label, tie: c.tie, fix: c.fix, ok: c.rx.test(text) }; });
+}
+
+/* ---------- prompt for AI coaching ---------- */
+var PURPOSES = { creative: "Generating ideas (creative)", decision: "Choosing between options (decision)", problem: "Working through a problem (problem resolution)", tactical: "Executing a plan (tactical)" };
+var RUBRIC = [
+  "You are a team-process coach for students in TMP 442, Leading Technology Teams (UC Santa Barbara). Give practical, specific guidance for improving collaboration and participation. Use ONLY the class frameworks below and ONLY the data provided. Do not invent facts, quotes or numbers. Describe behaviors, not personalities, and do not diagnose individuals.",
+  "",
+  "CLASS FRAMEWORKS",
+  "W1 Intro to Teams: Actual performance = potential performance minus process losses. Coordination losses (mismatched strategies; remedy: plan, practice, record, common language, someone who integrates specialized roles). Ability losses (evaluation apprehension, distraction; remedy: regulate inappropriate weighting of members' inputs, cross-training, manage anxiety). Motivation losses (social loafing, sucker effects; remedy: feedback and recognition, group commitment). Match team structure to task: creative teams need autonomy, problem-resolution teams need trust, tactical teams need clarity and roles. Separate idea generation, choosing, and implementation (IDEO). Agility paradox: clarify goals, roles and norms at the start of a project or meeting to move faster. Experiment and adapt through regular check-ins.",
+  "W2 Building and Managing Teams: Composition (right expertise), participation (is expertise shared?), influence (do experts have impact?). Participation is uneven (80/20); anyone not participating is expertise unavailable to the team. The most influential people are not necessarily the most expert (Kruger and Dunning). Tips: build trust and psychological safety, use smaller groups, solicit input before meetings, make members visible, learn each other's competences, rotate meeting control by topic expertise.",
+  "W3 Managing Conflict and Creativity: Good team practices are a team contract (common purpose, specific goals, rules of behavior and accountability), emotional awareness, and being evidence-based rather than verdict-based (discuss ideas before voting). Proactive conflict management (Eisenhardt): focus on facts, multiply alternatives, create common goals, use humor, balance the power structure, seek consensus with qualification. Kolb: act early, use ground rules, discuss substantive conflict openly (parking lot, breaks, smaller groups). Shah et al.: task conflict can help performance, relationship conflict does not; dyad conflict is most common.",
+  "W4 Influence and Decision-Making: Common challenges and fixes: lack of focus (observer, progress check), reluctant member (brainstorm beforehand, round-robin, direct questions), dominant member (\"I'd like to hear from X\", observer reports imbalance, rotate roles), accountability, evidence versus opinion, creating psychological safety (be vulnerable, respond well to others, invite others in, keep conflict about the task, shared norms). Structure: differentiation (division of labor) and integration (coordination); more interdependence needs more integration (pooled, sequential, reciprocal). Cialdini's principles of influence: liking, social proof, reciprocity, consistency, authority, scarcity. Page and Williams: diversity helps when you harness it. Failing successfully: clear definition of success, informative outcomes, low risk, documented assumptions."
+].join("\n");
+var SCHEMA = [
+  "Reply with only one JSON object in exactly this shape:",
+  "{",
+  "  \"headline\": \"one sentence summing up the team's biggest opportunity\",",
+  "  \"strengths\": [{\"point\": \"what is working\", \"evidence\": \"short quote or observation from the data\"}],",
+  "  \"findings\": [{\"area\": \"Composition|Participation|Influence|Process loss|Conflict|Psychological safety|Charter\", \"week\": \"W1|W2|W3|W4\", \"severity\": \"high|medium|low\", \"evidence\": \"specific line or count from the data\", \"insight\": \"what it means, in class terms\"}],",
+  "  \"actions\": [{\"owner\": \"team leader|whole team|a member's name\", \"do\": \"one concrete step\", \"why\": \"the framework behind it\", \"timing\": \"before the next meeting|in the next meeting|this week\"}],",
+  "  \"next_meeting_plan\": [\"3 to 5 short agenda steps, in order\"],",
+  "  \"data_gaps\": [\"what you could not tell from this data\"]",
+  "}",
+  "Limits: at most 2 strengths, 5 findings (highest severity first), 5 actions, 5 plan steps, 3 data gaps. Every finding must cite evidence from the data. If the data is thin or an input is empty, say so in data_gaps. Do not recommend anything that needs tools the team does not have."
+].join("\n");
+
+function gather() {
+  return {
+    transcript: document.getElementById("transcript").value,
+    roster: document.getElementById("roster").value,
+    purpose: document.getElementById("purpose").value,
+    charter: document.getElementById("charter").value,
+    feedback: document.getElementById("feedback").value
+  };
+}
+function clip(s, n) { s = s.trim(); return s.length > n ? s.slice(0, n) + "\n[truncated]" : s; }
+function buildPrompt(d) {
+  var a = analyze(parseTranscript(d.transcript), splitRoster(d.roster), d.purpose);
+  var facts = a.totalTurns
+    ? a.people.map(function (p) { return "- " + p.name + ": " + p.turns + " turns, " + pct(p.share) + "% of words"; }).join("\n")
+    : "(no transcript turns found)";
+  return [
+    RUBRIC, "",
+    "MEETING PURPOSE: " + PURPOSES[d.purpose], "",
+    "COMPUTED AIRTIME (counted by the tool; an equal share would be " + pct(a.eq) + "%):", facts, "",
+    "TRANSCRIPT:", clip(d.transcript, 30000) || "(none provided)", "",
+    "TEAM CHARTER:", clip(d.charter, 12000) || "(none provided)", "",
+    "FEEDBACK AND ASSESSMENTS:", clip(d.feedback, 12000) || "(none provided)", "",
+    SCHEMA
+  ].join("\n");
+}
+function splitRoster(s) { return s.split(/[,\n;]/).map(function (x) { return x.trim(); }).filter(Boolean); }
+
+/* ---------- rendering ---------- */
+function $(id) { return document.getElementById(id); }
+function h(tag, cls, text) {
+  var e = document.createElement(tag);
+  if (cls) e.className = cls;
+  if (text != null) e.textContent = text;
+  return e;
+}
+var SEVLABEL = { high: "High", medium: "Medium", low: "Low" };
+
+function renderInstant() {
+  var d = gather();
+  var turns = parseTranscript(d.transcript);
+  var a = analyze(turns, splitRoster(d.roster), d.purpose);
+  var part = $("partOut"); part.textContent = "";
+  var flags = $("flagOut"); flags.textContent = "";
+
+  if (!a.totalTurns) {
+    part.appendChild(h("p", "status", "Paste a transcript with one speaker per line, like “Maya: I think we should start with the data.”"));
+    flags.appendChild(h("li", "status", "Findings appear here once there is a transcript."));
+  } else {
+    var dl = h("dl", "stats");
+    [["People", a.n], ["Turns", a.totalTurns], ["Words", a.total],
+     ["Top " + a.k + (a.k === 1 ? " person" : " people") + " spoke", pct(a.topShare) + "%"]].forEach(function (s) {
+      var w = h("div", "stat"); w.appendChild(h("dt", null, s[0])); w.appendChild(h("dd", null, String(s[1]))); dl.appendChild(w);
+    });
+    part.appendChild(dl);
+    var lg = h("p", "legend"); var tk = h("b"); lg.appendChild(tk);
+    lg.appendChild(document.createTextNode("marks an equal share (" + pct(a.eq) + "%). Red bars are well above it, blue bars well below."));
+    part.appendChild(lg);
+
+    var head = h("div", "person colhead");
+    ["Member", "Share of words", "%", "Turns"].forEach(function (t, i) { var c = h("span", i > 1 ? "num" : null, t); head.appendChild(c); });
+    var ul = h("ul", "people"); ul.appendChild(h("li")).appendChild(head);
+    a.people.forEach(function (p) {
+      var li = h("li", "person" + (p.share >= Math.max(0.4, 1.6 * a.eq) && a.n >= 3 ? " hot" : "") + (p.quiet ? " quiet" : ""));
+      li.appendChild(h("span", "nm", p.name));
+      var tr = h("span", "track"); tr.style.setProperty("--eq", (a.eq * 100) + "%");
+      var f = h("span", "fill"); f.style.setProperty("--w", (p.share * 100) + "%");
+      tr.appendChild(f); tr.appendChild(h("span", "tick")); li.appendChild(tr);
+      li.appendChild(h("span", "num", pct(p.share) + "%"));
+      li.appendChild(h("span", "num", String(p.turns)));
+      ul.appendChild(li);
+    });
+    part.appendChild(ul);
+
+    a.flags.forEach(function (f) { flags.appendChild(findItem(f.sev, SEVLABEL[f.sev], f.title, f.ev, f.tryit, f.src)); });
+    a.strengths.forEach(function (s) { flags.appendChild(findItem("good", "Working", s, "", "", "")); });
+  }
+
+  var cOut = $("charterOut"); cOut.textContent = "";
+  var charterText = d.charter.trim();
+  if (!charterText) {
+    cOut.appendChild(h("li", "status", "Paste your team charter to see which parts of a team contract are covered."));
+  } else {
+    checkCharter(charterText).forEach(function (c) {
+      var li = h("li", "ck " + (c.ok ? "ok" : "miss"));
+      li.appendChild(h("span", "box", c.ok ? "✓" : "!"));
+      var b = h("div");
+      b.appendChild(h("div", "t", c.label));
+      b.appendChild(h("div", "d", c.ok ? "Covered. " + c.tie : c.fix + " (" + c.tie + ")"));
+      li.appendChild(b); cOut.appendChild(li);
+    });
+  }
+  $("promptOut").value = buildPrompt(d);
+}
+function findItem(kind, label, title, ev, tryit, src) {
+  var li = h("li", "find");
+  var top = h("div", "top");
+  top.appendChild(h("span", "pill " + kind, label));
+  top.appendChild(h("span", "ttl", title));
+  li.appendChild(top);
+  if (ev) li.appendChild(h("p", "ev", ev));
+  if (tryit) { var t = h("p", "try"); t.appendChild(h("b", null, "Try: ")); t.appendChild(document.createTextNode(tryit)); li.appendChild(t); }
+  if (src) li.appendChild(h("p", "src", src));
+  return li;
+}
+
+/* ---------- AI coaching ---------- */
+var sample = null, ctl = null;
+function aiMsg(node) { var o = $("aiOut"); o.textContent = ""; o.appendChild(node); }
+var ERR = {
+  not_granted: "AI coaching was not allowed for this page. You can still copy the prompt below into another AI tool.",
+  sampling_disabled: "Claude is not available for this account. Copy the prompt below into another AI tool.",
+  rate_limited: "Too many requests or your usage limit was reached. Wait a bit and try again.",
+  session_expired: "Your session expired. Sign in again and retry.",
+  invalid_json: "The answer came back in a shape this page could not read. Press the button again, or copy the prompt below into another AI tool.",
+  prompt_too_large: "The text is too long. Trim the transcript to the key part of the meeting.",
+  refused: "Claude declined this input. Check that the text is a team meeting and try again.",
+  upstream_error: "The connection to Claude dropped. Try again."
+};
+function renderAI(r) {
+  var out = h("div", "ai-out");
+  if (!r || typeof r !== "object") { aiMsg(h("div", "err", ERR.invalid_json)); return; }
+  if (r.headline) out.appendChild(h("p", "headline", String(r.headline)));
+  if (Array.isArray(r.strengths) && r.strengths.length) {
+    var s = h("div"); s.appendChild(h("h3", null, "What is working"));
+    var ul = h("ul", "plain");
+    r.strengths.forEach(function (x) { ul.appendChild(findItem("good", "Working", String(x.point || ""), String(x.evidence || ""), "", "")); });
+    s.appendChild(ul); out.appendChild(s);
+  }
+  if (Array.isArray(r.findings) && r.findings.length) {
+    var f = h("div"); f.appendChild(h("h3", null, "Findings"));
+    var fl = h("ul", "finds");
+    r.findings.forEach(function (x) {
+      var sev = ["high", "medium", "low"].indexOf(x.severity) > -1 ? x.severity : "low";
+      fl.appendChild(findItem(sev, SEVLABEL[sev], String(x.insight || x.area || ""), String(x.evidence || ""), "", [x.week, x.area].filter(Boolean).join(" · ")));
+    });
+    f.appendChild(fl); out.appendChild(f);
+  }
+  if (Array.isArray(r.actions) && r.actions.length) {
+    var a = h("div"); a.appendChild(h("h3", null, "What to do"));
+    var al = h("ul", "plain");
+    r.actions.forEach(function (x) {
+      var li = h("li", "act"); li.appendChild(h("span", "who", String(x.owner || "team")));
+      var b = h("div"); b.appendChild(h("div", null, String(x.do || "")));
+      var why = [x.timing, x.why].filter(Boolean).join(" · "); if (why) b.appendChild(h("div", "why", why));
+      li.appendChild(b); al.appendChild(li);
+    });
+    a.appendChild(al); out.appendChild(a);
+  }
+  if (Array.isArray(r.next_meeting_plan) && r.next_meeting_plan.length) {
+    var p = h("div"); p.appendChild(h("h3", null, "Plan for the next meeting"));
+    var ol = h("ol", "plist");
+    r.next_meeting_plan.forEach(function (x) { ol.appendChild(h("li", null, String(x))); });
+    p.appendChild(ol); out.appendChild(p);
+  }
+  if (Array.isArray(r.data_gaps) && r.data_gaps.length) {
+    var g = h("div"); g.appendChild(h("h3", null, "What this data could not tell us"));
+    var gl = h("ul", "plist");
+    r.data_gaps.forEach(function (x) { gl.appendChild(h("li", null, String(x))); });
+    g.appendChild(gl); out.appendChild(g);
+  }
+  aiMsg(out);
+}
+async function runAI() {
+  if (!sample) return;
+  var d = gather();
+  if (!d.transcript.trim() && !d.charter.trim() && !d.feedback.trim()) {
+    aiMsg(h("div", "err", "Add a transcript, charter, or feedback first.")); return;
+  }
+  ctl = new AbortController();
+  var wait = h("div", "stack");
+  var st = h("p", "status"); st.appendChild(document.createTextNode("Reading your inputs against the class frameworks")); st.appendChild(h("span", "dots"));
+  var stop = h("button", null, "Stop"); stop.type = "button"; stop.addEventListener("click", function () { if (ctl) ctl.abort(); });
+  wait.appendChild(st); wait.appendChild(stop); aiMsg(wait);
+  $("aiBtn").disabled = true;
+  try {
+    var res = await sample.json(buildPrompt(d), { signal: ctl.signal });
+    renderAI(res);
+  } catch (e) {
+    if (e && e.code === "cancelled") aiMsg(h("p", "status", "Stopped. Nothing was changed."));
+    else aiMsg(h("div", "err", ERR[e && e.code] || ERR.upstream_error));
+  } finally {
+    $("aiBtn").disabled = false;
+  }
+}
+
+/* ---------- wiring ---------- */
+function load(d) {
+  $("transcript").value = d.transcript; $("roster").value = d.roster; $("purpose").value = d.purpose;
+  $("charter").value = d.charter; $("feedback").value = d.feedback;
+}
+function setBanner(on) { $("sampleBanner").hidden = !on; }
+$("runBtn").addEventListener("click", renderInstant);
+$("sampleBtn").addEventListener("click", function () { load(SAMPLE); setBanner(true); renderInstant(); });
+$("clearBtn").addEventListener("click", function () {
+  load({ transcript: "", roster: "", purpose: "decision", charter: "", feedback: "" });
+  setBanner(false); renderInstant(); $("transcript").focus();
+});
+$("aiBtn").addEventListener("click", runAI);
+["transcript", "roster", "purpose", "charter", "feedback"].forEach(function (id) {
+  $(id).addEventListener("input", function () { $("promptOut").value = buildPrompt(gather()); setBanner(false); });
+});
+$("copyBtn").addEventListener("click", async function () {
+  var ta = $("promptOut"), note = $("copyNote");
+  try { await navigator.clipboard.writeText(ta.value); note.textContent = "Copied."; }
+  catch (e) { ta.focus(); ta.select(); note.textContent = "Press Ctrl+C or Cmd+C to copy the selected text."; }
+});
+
+load(SAMPLE);
+renderInstant();
+(async function () {
+  try { if (window.claude && window.claude.use) sample = await window.claude.use("sample"); } catch (e) { sample = null; }
+  var b = $("aiBtn"), n = $("aiNote");
+  if (sample) { b.disabled = false; n.textContent = "AI coaching sends your text to Claude through your own account."; }
+  else { b.hidden = true; n.textContent = "AI coaching is not available in this view. The instant check still works, and you can copy the prompt at the bottom into any AI tool."; }
+})();
+</script>
+
+</body></html>
